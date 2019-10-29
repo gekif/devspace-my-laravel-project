@@ -1,0 +1,53 @@
+version: v1beta4
+images:
+  default:
+    image: dscr.io/${DEVSPACE_USERNAME}/mylaravelproject
+deployments:
+- name: database
+  helm:
+    chart:
+      name: stable/mysql
+    values:
+      mysqlDatabase: "homestead"
+      mysqlUser: "homestead"
+      mysqlRootPassword: ${DB_ROOT_PASSWORD}
+      mysqlPassword: ${DB_PASSWORD}
+      resources:
+        requests:
+          memory: 0
+          cpu: 0
+      initContainer:
+        resources:
+          requests:
+            memory: 0
+            cpu: 0
+- name: my-laravel-project
+  helm:
+    componentChart: true
+    values:
+      containers:
+      - image: dscr.io/${DEVSPACE_USERNAME}/mylaravelproject
+        env:
+        - name: DB_HOST
+          value: database-mysql
+        - name: DB_PASSWORD
+          value: ${DB_PASSWORD}
+      service:
+        ports:
+        - port: 80
+dev:
+  ports:
+  - imageName: default
+    forward:
+    - port: 8080
+      remotePort: 80
+  open:
+  - url: http://localhost:8080
+  sync:
+  - imageName: default
+    excludePaths:
+    - Dockerfile
+    - devspace.yaml
+commands:
+- name: php
+  command: devspace enter php
